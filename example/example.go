@@ -23,6 +23,9 @@ func Example() {
 	defer closer.Close()
 
 	client := redis.NewClient(&redis.Options{})
+	ot_redis.Customize = func(span opentracing.Span, cmder redis.Cmder) {
+		span.LogKV("cmd", cmder.String())
+	}
 	ot_redis.Wrap(client)
 
 	http.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {

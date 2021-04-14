@@ -19,6 +19,7 @@ type tracingHook struct{}
 func (h *tracingHook) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, command(cmd))
 	tagging(span)
+	Customize(span, cmd)
 	return ctx, nil
 }
 
@@ -31,6 +32,9 @@ func (h *tracingHook) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
 func (h *tracingHook) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
 	span, ctx := opentracing.StartSpanFromContext(ctx, command(cmds...))
 	tagging(span)
+	for _, cmd := range cmds {
+		Customize(span, cmd)
+	}
 	return ctx, nil
 }
 
@@ -53,3 +57,7 @@ func tagging(span opentracing.Span) {
 	ext.DBType.Set(span, "redis")
 	ext.SpanKind.Set(span, "client")
 }
+
+type customizer func(opentracing.Span, redis.Cmder)
+
+var Customize customizer = func(opentracing.Span, redis.Cmder) {}
